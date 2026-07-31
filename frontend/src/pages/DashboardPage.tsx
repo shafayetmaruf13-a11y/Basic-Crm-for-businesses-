@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { DEAL_STAGES } from '../api/types';
 import type { Appointment, Company, Contact, Deal, Task } from '../api/types';
 
 export function DashboardPage() {
@@ -24,6 +25,25 @@ export function DashboardPage() {
   const openDeals = deals.filter((d) => d.stage !== 'won' && d.stage !== 'lost');
   const pipelineValue = openDeals.reduce((sum, d) => sum + d.value, 0);
 
+  const stageTotals = useMemo(
+    () =>
+      DEAL_STAGES.map((s) => ({
+        ...s,
+        total: deals.filter((d) => d.stage === s.value).reduce((sum, d) => sum + d.value, 0),
+      })),
+    [deals]
+  );
+  const maxStageTotal = Math.max(1, ...stageTotals.map((s) => s.total));
+
+  const tasksDueThisWeek = useMemo(() => {
+    const now = new Date();
+    const weekOut = new Date(now);
+    weekOut.setDate(weekOut.getDate() + 7);
+    return tasks
+      .filter((t) => t.due_date && new Date(t.due_date) <= weekOut)
+      .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime());
+  }, [tasks]);
+
   return (
     <div>
       <h1 className="page-title">Dashboard</h1>
@@ -46,17 +66,39 @@ export function DashboardPage() {
         </Link>
       </div>
 
+      <section className="panel" style={{ marginBottom: 20 }}>
+        <h2>Pipeline by stage</h2>
+        {deals.length === 0 ? (
+          <p className="empty-hint">No deals yet.</p>
+        ) : (
+          <div className="bar-chart">
+            {stageTotals.map((s) => (
+              <div key={s.value} className="bar-chart-row">
+                <div className="bar-chart-label">{s.label}</div>
+                <div className="bar-chart-track">
+                  <div
+                    className="bar-chart-fill"
+                    style={{ width: `${(s.total / maxStageTotal) * 100}%` }}
+                  />
+                </div>
+                <div className="bar-chart-value">${s.total.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       <div className="dashboard-columns">
         <section className="panel">
-          <h2>Upcoming tasks</h2>
-          {tasks.length === 0 && <p className="empty-hint">No open tasks.</p>}
+          <h2>Tasks due this week</h2>
+          {tasksDueThisWeek.length === 0 && (
+            <p className="empty-hint">Nothing due in the next 7 days.</p>
+          )}
           <ul className="simple-list">
-            {tasks.slice(0, 6).map((t) => (
+            {tasksDueThisWeek.slice(0, 6).map((t) => (
               <li key={t.id}>
                 <span>{t.title}</span>
-                {t.due_date && (
-                  <span className="muted">{new Date(t.due_date).toLocaleDateString()}</span>
-                )}
+                <span className="muted">{new Date(t.due_date!).toLocaleDateString()}</span>
               </li>
             ))}
           </ul>

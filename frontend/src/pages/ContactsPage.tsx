@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { Modal } from '../components/Modal';
 import type { Company, Contact } from '../api/types';
@@ -29,6 +30,7 @@ export function ContactsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   function load() {
     setLoading(true);
@@ -46,6 +48,23 @@ export function ContactsPage() {
     if (!id) return '—';
     return companies.find((c) => c.id === id)?.name ?? '—';
   }
+
+  const filteredContacts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter((c) => {
+      const haystack = [
+        c.first_name,
+        c.last_name,
+        c.email ?? '',
+        c.phone ?? '',
+        companyName(c.company_id),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [contacts, search, companies]);
 
   function openCreate() {
     setEditing(null);
@@ -107,10 +126,20 @@ export function ContactsPage() {
         </button>
       </div>
 
+      <div style={{ marginBottom: 16, maxWidth: 320 }}>
+        <input
+          placeholder="Search contacts..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       {loading ? (
         <p>Loading...</p>
-      ) : contacts.length === 0 ? (
-        <p className="empty-hint">No contacts yet. Add your first one.</p>
+      ) : filteredContacts.length === 0 ? (
+        <p className="empty-hint">
+          {contacts.length === 0 ? 'No contacts yet. Add your first one.' : 'No matches.'}
+        </p>
       ) : (
         <table className="data-table">
           <thead>
@@ -123,10 +152,12 @@ export function ContactsPage() {
             </tr>
           </thead>
           <tbody>
-            {contacts.map((c) => (
+            {filteredContacts.map((c) => (
               <tr key={c.id}>
                 <td>
-                  {c.first_name} {c.last_name}
+                  <Link to={`/contacts/${c.id}`}>
+                    {c.first_name} {c.last_name}
+                  </Link>
                 </td>
                 <td>{companyName(c.company_id)}</td>
                 <td>{c.email || '—'}</td>

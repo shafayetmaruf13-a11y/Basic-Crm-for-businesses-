@@ -66,6 +66,7 @@ class Contact(Base):
     deals = relationship("Deal", back_populates="contact")
     tasks = relationship("Task", back_populates="contact")
     appointments = relationship("Appointment", back_populates="contact")
+    calls = relationship("Call", back_populates="contact", cascade="all, delete-orphan")
 
 
 class Deal(Base):
@@ -112,3 +113,17 @@ class Appointment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     contact = relationship("Contact", back_populates="appointments")
+
+
+class Call(Base):
+    __tablename__ = "calls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
+    called_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    duration_minutes = Column(Integer, nullable=True)
+    outcome = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    contact = relationship("Contact", back_populates="calls")

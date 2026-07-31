@@ -182,3 +182,31 @@ class AppointmentOut(AppointmentBase):
 
     id: int
     created_at: datetime
+
+
+# ---------- Call ----------
+
+class CallBase(BaseModel):
+    contact_id: int
+    called_at: datetime
+    duration_minutes: Optional[int] = None
+    outcome: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class CallCreate(CallBase):
+    pass
+
+
+class CallUpdate(BaseModel):
+    called_at: Optional[datetime] = None
+    duration_minutes: Optional[int] = None
+    outcome: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class CallOut(CallBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime

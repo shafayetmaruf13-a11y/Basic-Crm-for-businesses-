@@ -573,6 +573,48 @@ label {
   white-space: nowrap;
 }
 
+/* ---------- Bar chart ---------- */
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bar-chart-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 80px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.bar-chart-label {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.bar-chart-track {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.bar-chart-fill {
+  background: var(--accent);
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.2s ease;
+}
+
+.bar-chart-value {
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Badges ---------- */
 
 .badge {

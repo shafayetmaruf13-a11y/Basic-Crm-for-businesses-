@@ -74,3 +74,21 @@ export interface Appointment {
   contact_id?: number | null;
   created_at: string;
 }
+
+export interface Call {
+  id: number;
+  contact_id: number;
+  called_at: string;
+  duration_minutes?: number | null;
+  outcome?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export const CALL_OUTCOMES = [
+  'Connected',
+  'Left voicemail',
+  'No answer',
+  'Scheduled follow-up',
+  'Not interested',
+];

@@ -1,4 +1,4 @@
-import { type DragEvent, type FormEvent, useEffect, useState } from 'react';
+import { type DragEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { Modal } from '../components/Modal';
 import { DEAL_STAGES, type Company, type Contact, type Deal, type DealStage } from '../api/types';
@@ -27,9 +27,12 @@ export function DealsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
+  const [companyFilter, setCompanyFilter] = useState('');
+  const [contactFilter, setContactFilter] = useState('');
 
   function load() {
     setLoading(true);
@@ -48,8 +51,30 @@ export function DealsPage() {
 
   useEffect(load, []);
 
+  const visibleDeals = useMemo(() => {
+    return deals.filter((d) => {
+      if (companyFilter && String(d.company_id ?? '') !== companyFilter) return false;
+      if (contactFilter && String(d.contact_id ?? '') !== contactFilter) return false;
+      return true;
+    });
+  }, [deals, companyFilter, contactFilter]);
+
   function openCreate(stage: DealStage) {
+    setEditingId(null);
     setForm({ ...emptyForm, stage });
+    setShowForm(true);
+  }
+
+  function openEdit(deal: Deal) {
+    setEditingId(deal.id);
+    setForm({
+      title: deal.title,
+      value: String(deal.value),
+      stage: deal.stage,
+      contact_id: deal.contact_id ? String(deal.contact_id) : '',
+      company_id: deal.company_id ? String(deal.company_id) : '',
+      notes: deal.notes ?? '',
+    });
     setShowForm(true);
   }
 
@@ -65,12 +90,24 @@ export function DealsPage() {
       notes: form.notes || null,
     };
     try {
-      await api.post('/deals', payload);
+      if (editingId) {
+        await api.put(`/deals/${editingId}`, payload);
+      } else {
+        await api.post('/deals', payload);
+      }
       setShowForm(false);
       load();
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleDelete() {
+    if (!editingId) return;
+    if (!confirm('Delete this deal?')) return;
+    await api.delete(`/deals/${editingId}`);
+    setShowForm(false);
+    load();
   }
 
   async function moveDeal(dealId: number, stage: DealStage) {
@@ -91,6 +128,24 @@ export function DealsPage() {
         <h1 className="page-title" style={{ marginBottom: 0 }}>
           Deals
         </h1>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)}>
+            <option value="">All companies</option>
+            {companies.map((co) => (
+              <option key={co.id} value={co.id}>
+                {co.name}
+              </option>
+            ))}
+          </select>
+          <select value={contactFilter} onChange={(e) => setContactFilter(e.target.value)}>
+            <option value="">All contacts</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.first_name} {c.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -98,7 +153,7 @@ export function DealsPage() {
       ) : (
         <div className="kanban-board">
           {DEAL_STAGES.map((stageInfo) => {
-            const stageDeals = deals.filter((d) => d.stage === stageInfo.value);
+            const stageDeals = visibleDeals.filter((d) => d.stage === stageInfo.value);
             const total = stageDeals.reduce((sum, d) => sum + d.value, 0);
             return (
               <div
@@ -126,6 +181,7 @@ export function DealsPage() {
                       className="kanban-card"
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData('text/deal-id', String(deal.id))}
+                      onClick={() => openEdit(deal)}
                     >
                       <div className="kanban-card-title">{deal.title}</div>
                       <div className="kanban-card-value">${deal.value.toLocaleString()}</div>
@@ -145,7 +201,7 @@ export function DealsPage() {
       )}
 
       {showForm && (
-        <Modal title="Add deal" onClose={() => setShowForm(false)}>
+        <Modal title={editingId ? 'Edit deal' : 'Add deal'} onClose={() => setShowForm(false)}>
           <form onSubmit={handleSubmit}>
             <label>
               Title
@@ -213,17 +269,26 @@ export function DealsPage() {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
               />
             </label>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </button>
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save'}
-              </button>
+            <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+              {editingId ? (
+                <button type="button" className="btn btn-danger" onClick={handleDelete}>
+                  Delete
+                </button>
+              ) : (
+                <span />
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowForm(false)}
+                >
+                  Cancel
+                </button>
+                <button className="btn btn-primary" type="submit" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </div>
           </form>
         </Modal>

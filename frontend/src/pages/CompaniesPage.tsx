@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { Modal } from '../components/Modal';
 import type { Company } from '../api/types';
@@ -20,6 +20,7 @@ export function CompaniesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   function load() {
     setLoading(true);
@@ -71,6 +72,14 @@ export function CompaniesPage() {
     load();
   }
 
+  const filteredCompanies = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return companies;
+    return companies.filter((c) =>
+      [c.name, c.website ?? '', c.phone ?? '', c.address ?? ''].join(' ').toLowerCase().includes(q)
+    );
+  }, [companies, search]);
+
   return (
     <div>
       <div className="page-header">
@@ -82,10 +91,20 @@ export function CompaniesPage() {
         </button>
       </div>
 
+      <div style={{ marginBottom: 16, maxWidth: 320 }}>
+        <input
+          placeholder="Search companies..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       {loading ? (
         <p>Loading...</p>
-      ) : companies.length === 0 ? (
-        <p className="empty-hint">No companies yet. Add your first one.</p>
+      ) : filteredCompanies.length === 0 ? (
+        <p className="empty-hint">
+          {companies.length === 0 ? 'No companies yet. Add your first one.' : 'No matches.'}
+        </p>
       ) : (
         <table className="data-table">
           <thead>
@@ -98,7 +117,7 @@ export function CompaniesPage() {
             </tr>
           </thead>
           <tbody>
-            {companies.map((c) => (
+            {filteredCompanies.map((c) => (
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.website || '—'}</td>
