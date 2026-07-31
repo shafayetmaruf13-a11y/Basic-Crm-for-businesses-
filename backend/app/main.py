@@ -9,7 +9,7 @@ from .routers import auth, appointments, calls, companies, contacts, deals, task
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Basic CRM API")
+app = FastAPI(title="Dodgy Daily CRM API")
 
 allowed_origins = os.getenv("CRM_CORS_ORIGINS", "http://localhost:5173").split(",")
 

@@ -1,4 +1,4 @@
-# Basic CRM for Businesses
+# Dodgy Daily CRM
 
 A small business CRM with contacts, companies, a deals pipeline, tasks, and an
 appointments calendar.

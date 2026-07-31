@@ -16,7 +16,7 @@ export function Layout() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-brand">Basic CRM</div>
+        <div className="sidebar-brand">Dodgy Daily CRM</div>
         <nav className="sidebar-nav">
           {navItems.map((item) => (
             <NavLink
